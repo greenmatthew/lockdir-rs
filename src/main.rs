@@ -20,9 +20,10 @@ fn main() {
             Command::new("lock")
                 .about("Lock a directory by setting the immutable attribute")
                 .arg(
-                    Arg::new("PATH")
-                        .help("Path to the directory to lock (defaults to current directory)")
+                    Arg::new("PATHS")
+                        .help("Paths to the directories to lock (defaults to current directory)")
                         .required(false)
+                        .num_args(1..)
                         .index(1),
                 )
                 .arg(
@@ -37,9 +38,10 @@ fn main() {
             Command::new("unlock")
                 .about("Unlock a previously locked directory")
                 .arg(
-                    Arg::new("PATH")
-                        .help("Path to the directory to unlock (defaults to current directory)")
+                    Arg::new("PATHS")
+                        .help("Paths to the directories to unlock (defaults to current directory)")
                         .required(false)
+                        .num_args(1..)
                         .index(1),
                 )
                 .arg(
@@ -59,19 +61,27 @@ fn main() {
 
     match matches.subcommand() {
         Some(("lock", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
+            let paths: Vec<&str> = sub_matches
+                .get_many::<String>("PATHS")
+                .map(|vals| vals.map(String::as_str).collect())
+                .unwrap_or_else(Vec::new);
+            
             let force = sub_matches.get_flag("force");
             
-            if let Err(err) = commands::lock::lock_directory(path, force) {
+            if let Err(err) = commands::lock::lock_directories(&paths, force) {
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }
         }
         Some(("unlock", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
+            let paths: Vec<&str> = sub_matches
+                .get_many::<String>("PATHS")
+                .map(|vals| vals.map(String::as_str).collect())
+                .unwrap_or_else(Vec::new);
+            
             let force = sub_matches.get_flag("force");
             
-            if let Err(err) = commands::unlock::unlock_directory(path, force) {
+            if let Err(err) = commands::unlock::unlock_directories(&paths, force) {
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }

@@ -3,6 +3,40 @@ use std::io::{Error, ErrorKind, Result};
 
 use crate::fs_utils;
 
+/// Unlock multiple directories
+/// 
+/// If paths is empty, the current directory will be unlocked
+pub fn unlock_directories(paths: &[&str], force: bool) -> Result<()> {
+    if paths.is_empty() {
+        // If no paths provided, unlock the current directory
+        return unlock_directory(None, force);
+    }
+
+    // Process each path
+    let mut errors = Vec::new();
+    
+    for &path in paths {
+        if let Err(err) = unlock_directory(Some(path), force) {
+            // Collect errors but continue processing other paths
+            errors.push((path, err));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        // Format all errors into a single error message
+        let mut error_msg = String::new();
+        error_msg.push_str("Failed to unlock one or more directories:\n");
+        
+        for (path, err) in errors {
+            error_msg.push_str(&format!("  - {}: {}\n", path, err));
+        }
+        
+        Err(Error::new(ErrorKind::Other, error_msg))
+    }
+}
+
 pub fn unlock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     // Validate the directory path
     let path = fs_utils::validate_directory(dir_path)?;

@@ -3,6 +3,40 @@ use std::io::{Error, ErrorKind, Result, Write};
 
 use crate::fs_utils;
 
+/// Lock multiple directories
+/// 
+/// If paths is empty, the current directory will be locked
+pub fn lock_directories(paths: &[&str], force: bool) -> Result<()> {
+    if paths.is_empty() {
+        // If no paths provided, lock the current directory
+        return lock_directory(None, force);
+    }
+
+    // Process each path
+    let mut errors = Vec::new();
+    
+    for &path in paths {
+        if let Err(err) = lock_directory(Some(path), force) {
+            // Collect errors but continue processing other paths
+            errors.push((path, err));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        // Format all errors into a single error message
+        let mut error_msg = String::new();
+        error_msg.push_str("Failed to lock one or more directories:\n");
+        
+        for (path, err) in errors {
+            error_msg.push_str(&format!("  - {}: {}\n", path, err));
+        }
+        
+        Err(Error::new(ErrorKind::Other, error_msg))
+    }
+}
+
 pub fn lock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     // Validate the directory path
     let path = fs_utils::validate_directory(dir_path)?;
