@@ -1,5 +1,6 @@
 use std::fs::remove_file;
 use std::io::{Error, ErrorKind, Result};
+use std::fmt::Write as FmtWrite;
 
 use crate::fs_utils;
 
@@ -30,7 +31,8 @@ pub fn unlock_directories(paths: &[&str], force: bool) -> Result<()> {
         error_msg.push_str("Failed to unlock one or more directories:\n");
         
         for (path, err) in errors {
-            error_msg.push_str(&format!("  - {}: {}\n", path, err));
+            // Using write! macro to avoid allocation with format!
+            let _ = writeln!(error_msg, "  - {path}: {err}");
         }
         
         Err(Error::new(ErrorKind::Other, error_msg))

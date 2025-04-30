@@ -61,10 +61,10 @@ fn main() {
 
     match matches.subcommand() {
         Some(("lock", sub_matches)) => {
+            // Using map_or_else instead of map + unwrap_or_else
             let paths: Vec<&str> = sub_matches
                 .get_many::<String>("PATHS")
-                .map(|vals| vals.map(String::as_str).collect())
-                .unwrap_or_else(Vec::new);
+                .map_or_else(Vec::new, |vals| vals.map(String::as_str).collect());
             
             let force = sub_matches.get_flag("force");
             
@@ -74,10 +74,10 @@ fn main() {
             }
         }
         Some(("unlock", sub_matches)) => {
+            // Using map_or_else instead of map + unwrap_or_else
             let paths: Vec<&str> = sub_matches
                 .get_many::<String>("PATHS")
-                .map(|vals| vals.map(String::as_str).collect())
-                .unwrap_or_else(Vec::new);
+                .map_or_else(Vec::new, |vals| vals.map(String::as_str).collect());
             
             let force = sub_matches.get_flag("force");
             
