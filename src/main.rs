@@ -52,6 +52,29 @@ fn main() {
                         .action(ArgAction::SetTrue),
                 )
         )
+        .subcommand(
+            Command::new("rsync")
+                .about("Synchronize files to or from locked directories using rsync")
+                .arg(
+                    Arg::new("SOURCE")
+                        .help("Source path (file or directory)")
+                        .required(true)
+                        .index(1),
+                )
+                .arg(
+                    Arg::new("DESTINATION")
+                        .help("Destination path (file or directory)")
+                        .required(true)
+                        .index(2),
+                )
+                .arg(
+                    Arg::new("move")
+                        .short('m')
+                        .long("move")
+                        .help("Move files instead of copying (removes source files after successful transfer)")
+                        .action(ArgAction::SetTrue),
+                )
+        )
         .get_matches();
 
     if matches.get_flag("license") {
@@ -82,6 +105,18 @@ fn main() {
             let force = sub_matches.get_flag("force");
             
             if let Err(err) = commands::unlock::unlock_directories(&paths, force) {
+                eprintln!("Error: {err}");
+                std::process::exit(1);
+            }
+        }
+        Some(("rsync", sub_matches)) => {
+            // Get required source and destination arguments
+            let source = sub_matches.get_one::<String>("SOURCE").expect("SOURCE is required");
+            let destination = sub_matches.get_one::<String>("DESTINATION").expect("DESTINATION is required");
+            
+            let move_files = sub_matches.get_flag("move");
+            
+            if let Err(err) = commands::rsync::rsync_directories(source, destination, move_files) {
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }
