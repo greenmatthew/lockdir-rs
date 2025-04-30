@@ -1,57 +1,49 @@
-use std::io::Result;
-use clap::{ArgMatches, Command, Arg, ArgAction};
+use std::io::{Error, ErrorKind, Result};
+use std::process::Command;
+use clap::{ArgMatches, Command as ClapCommand, Arg};
 
 /// Build the rsync subcommand
-pub fn build_subcommand() -> Command {
-    Command::new("rsync")
+pub fn build_subcommand() -> ClapCommand {
+    ClapCommand::new("rsync")
         .about("Synchronize files to or from locked directories using rsync")
         .arg(
-            Arg::new("SOURCE")
-                .help("Source path (file or directory)")
+            Arg::new("RSYNC_ARGS")
+                .help("Arguments to pass directly to rsync (must be quoted)")
                 .required(true)
-                .index(1),
-        )
-        .arg(
-            Arg::new("DESTINATION")
-                .help("Destination path (file or directory)")
-                .required(true)
-                .index(2),
-        )
-        .arg(
-            Arg::new("move")
-                .short('m')
-                .long("move")
-                .help("Move files instead of copying (removes source files after successful transfer)")
-                .action(ArgAction::SetTrue),
+                .trailing_var_arg(true)  // This is important for handling flags
+                .allow_hyphen_values(true)  // Allow arguments starting with hyphens
+                .value_parser(clap::value_parser!(String)),
         )
 }
 
 /// Handle the rsync subcommand
 pub fn handle_command(sub_matches: &ArgMatches) -> Result<()> {
-    // Get required source and destination arguments
-    let source = sub_matches.get_one::<String>("SOURCE").expect("SOURCE is required");
-    let destination = sub_matches.get_one::<String>("DESTINATION").expect("DESTINATION is required");
+    // Get required rsync args
+    let args = sub_matches.get_one::<String>("RSYNC_ARGS").expect("RSYNC_ARGS is required");
     
-    let move_files = sub_matches.get_flag("move");
+    println!("Running rsync with arguments: {args}");
     
-    rsync_directories(source, destination, move_files)
-}
+    // Execute rsync as a shell command to preserve the original argument structure
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(format!("rsync {args}"))
+        .output()?;
 
-/// Rsync command that wraps rsync for copying files to/from locked directories
-/// 
-/// This is a placeholder implementation that only echoes the command
-fn rsync_directories(source: &str, destination: &str, move_files: bool) -> Result<()> {
-    // Construct the rsync command that would be executed
-    let operation = if move_files { "move" } else { "copy" };
-    let rsync_opts = if move_files { "--remove-source-files" } else { "" };
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!("Error running rsync: {error_message}"),
+        ));
+    }
     
-    println!("This would {operation} files using rsync:");
-    println!("  Source: {source}");
-    println!("  Destination: {destination}");
-    println!("  Command that would be run: rsync -avz {rsync_opts} \"{source}\" \"{destination}\"");
-    println!();
-    println!("Note: This is a placeholder implementation.");
-    println!("Actual synchronization will be implemented in a future version.");
+    println!("Rsync completed successfully.");
+    
+    // Print stdout if any
+    if !output.stdout.is_empty() {
+        println!("Output:");
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+    }
     
     Ok(())
 }
