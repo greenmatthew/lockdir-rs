@@ -1,13 +1,46 @@
 use std::fs::remove_file;
 use std::io::{Error, ErrorKind, Result};
 use std::fmt::Write as FmtWrite;
+use clap::{ArgMatches, Command, Arg, ArgAction};
 
 use crate::fs_utils;
+
+/// Build the unlock subcommand
+pub fn build_subcommand() -> Command {
+    Command::new("unlock")
+        .about("Unlock a previously locked directory")
+        .arg(
+            Arg::new("PATHS")
+                .help("Paths to the directories to unlock (defaults to current directory)")
+                .required(false)
+                .num_args(1..)
+                .index(1),
+        )
+        .arg(
+            Arg::new("force")
+                .short('f')
+                .long("force")
+                .help("Force unlock even if some files seem to remain locked")
+                .action(ArgAction::SetTrue),
+        )
+}
+
+/// Handle the unlock subcommand
+pub fn handle_command(sub_matches: &ArgMatches) -> Result<()> {
+    // Using map_or_else instead of map + unwrap_or_else
+    let paths: Vec<&str> = sub_matches
+        .get_many::<String>("PATHS")
+        .map_or_else(Vec::new, |vals| vals.map(String::as_str).collect());
+    
+    let force = sub_matches.get_flag("force");
+    
+    unlock_directories(&paths, force)
+}
 
 /// Unlock multiple directories
 /// 
 /// If paths is empty, the current directory will be unlocked
-pub fn unlock_directories(paths: &[&str], force: bool) -> Result<()> {
+fn unlock_directories(paths: &[&str], force: bool) -> Result<()> {
     if paths.is_empty() {
         // If no paths provided, unlock the current directory
         return unlock_directory(None, force);
@@ -39,7 +72,7 @@ pub fn unlock_directories(paths: &[&str], force: bool) -> Result<()> {
     }
 }
 
-pub fn unlock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
+fn unlock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     // Validate the directory path
     let path = fs_utils::validate_directory(dir_path)?;
 

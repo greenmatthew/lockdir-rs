@@ -1,13 +1,46 @@
 use std::fs::File;
 use std::io::{Error, ErrorKind, Result, Write};
 use std::fmt::Write as FmtWrite;
+use clap::{ArgMatches, Command, Arg, ArgAction};
 
 use crate::fs_utils;
+
+/// Build the lock subcommand
+pub fn build_subcommand() -> Command {
+    Command::new("lock")
+        .about("Lock a directory by setting the immutable attribute")
+        .arg(
+            Arg::new("PATHS")
+                .help("Paths to the directories to lock (defaults to current directory)")
+                .required(false)
+                .num_args(1..)
+                .index(1),
+        )
+        .arg(
+            Arg::new("force")
+                .short('f')
+                .long("force")
+                .help("Force lock even if directory appears to be already locked")
+                .action(ArgAction::SetTrue),
+        )
+}
+
+/// Handle the lock subcommand
+pub fn handle_command(sub_matches: &ArgMatches) -> Result<()> {
+    // Using map_or_else instead of map + unwrap_or_else
+    let paths: Vec<&str> = sub_matches
+        .get_many::<String>("PATHS")
+        .map_or_else(Vec::new, |vals| vals.map(String::as_str).collect());
+    
+    let force = sub_matches.get_flag("force");
+    
+    lock_directories(&paths, force)
+}
 
 /// Lock multiple directories
 /// 
 /// If paths is empty, the current directory will be locked
-pub fn lock_directories(paths: &[&str], force: bool) -> Result<()> {
+fn lock_directories(paths: &[&str], force: bool) -> Result<()> {
     if paths.is_empty() {
         // If no paths provided, lock the current directory
         return lock_directory(None, force);
@@ -39,7 +72,7 @@ pub fn lock_directories(paths: &[&str], force: bool) -> Result<()> {
     }
 }
 
-pub fn lock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
+fn lock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     // Validate the directory path
     let path = fs_utils::validate_directory(dir_path)?;
 
