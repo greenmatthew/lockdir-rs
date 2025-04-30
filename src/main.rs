@@ -1,4 +1,4 @@
-use clap::{Command, Arg};
+use clap::{Command, Arg, ArgAction};
 mod commands;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -13,7 +13,27 @@ fn main() {
             Arg::new("license")
                 .long("license")
                 .help("Display the license information")
-                .action(clap::ArgAction::SetTrue),
+                .action(ArgAction::SetTrue),
+        )
+        .subcommand(
+            Command::new("lock")
+                .about("Lock a directory by setting the immutable attribute")
+                .arg(
+                    Arg::new("PATH")
+                        .help("Path to the directory to lock (defaults to current directory)")
+                        .required(false)
+                        .index(1),
+                )
+        )
+        .subcommand(
+            Command::new("unlock")
+                .about("Unlock a previously locked directory")
+                .arg(
+                    Arg::new("PATH")
+                        .help("Path to the directory to unlock (defaults to current directory)")
+                        .required(false)
+                        .index(1),
+                )
         )
         .get_matches();
 
@@ -23,6 +43,22 @@ fn main() {
     }
 
     match matches.subcommand() {
+        Some(("lock", sub_matches)) => {
+            let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
+            
+            if let Err(err) = commands::lock::lock_directory(path) {
+                eprintln!("Error: {}", err);
+                std::process::exit(1);
+            }
+        }
+        Some(("unlock", sub_matches)) => {
+            let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
+            
+            if let Err(err) = commands::unlock::unlock_directory(path) {
+                eprintln!("Error: {}", err);
+                std::process::exit(1);
+            }
+        }
         _ => {
             panic!("Unexpected command - This should not be reached due to arg_required_else_help(true)");
         }
