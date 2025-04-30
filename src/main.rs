@@ -1,5 +1,6 @@
 use clap::{Command, Arg, ArgAction};
 mod commands;
+mod fs_utils;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const LICENSE: &str = include_str!("../LICENSE");
