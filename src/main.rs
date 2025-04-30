@@ -25,6 +25,13 @@ fn main() {
                         .required(false)
                         .index(1),
                 )
+                .arg(
+                    Arg::new("force")
+                        .short('f')
+                        .long("force")
+                        .help("Force lock even if directory appears to be already locked")
+                        .action(ArgAction::SetTrue),
+                )
         )
         .subcommand(
             Command::new("unlock")
@@ -46,8 +53,9 @@ fn main() {
     match matches.subcommand() {
         Some(("lock", sub_matches)) => {
             let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
+            let force = sub_matches.get_flag("force");
             
-            if let Err(err) = commands::lock::lock_directory(path) {
+            if let Err(err) = commands::lock::lock_directory(path, force) {
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }

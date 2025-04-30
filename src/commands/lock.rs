@@ -2,8 +2,9 @@ use std::fs::File;
 use std::io::{Error, ErrorKind, Result, Write};
 
 use crate::fs_utils;
+use crate::commands::unlock;
 
-pub fn lock_directory(dir_path: Option<&str>) -> Result<()> {
+pub fn lock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     // Validate the directory path
     let path = fs_utils::validate_directory(dir_path)?;
 
@@ -12,10 +13,37 @@ pub fn lock_directory(dir_path: Option<&str>) -> Result<()> {
     
     // Check if directory is already locked
     if lock_file_path.exists() {
-        return Err(Error::new(
-            ErrorKind::AlreadyExists,
-            format!("Directory is already locked: {}", path.display()),
-        ));
+        if force {
+            // If force is true, show message and proceed with force locking
+            println!("Directory is already locked... forcing it locked anyways.");
+            
+            // Try to unlock the directory first
+            match unlock::unlock_directory(dir_path) {
+                Ok(()) => {
+                    // Success silently continues to locking
+                }
+                Err(e) => {
+                    // Only log warning if unlock fails but still continue
+                    eprintln!("Warning: Could not properly unlock directory: {e}");
+                }
+            }
+        } else {
+            // Without force flag, return an error with hint to use force flag
+            return Err(Error::new(
+                ErrorKind::AlreadyExists,
+                format!("Directory is already locked: {} (try using -f to force it to lock the dir and all contents anyway)", path.display()),
+            ));
+        }
+    } else if force {
+        // If force is set but no lockfile exists, check if we can actually set attributes
+        // This would handle the case where directory might be locked but .lockdir is missing
+        let test_result = fs_utils::check_immutable_attribute(&path);
+        if test_result.is_err() || test_result.unwrap() {
+            println!(".lockdir file is missing, but directory may be locked. Replacing lock file and re-locking contents.");
+            
+            // Attempt to remove immutable attribute first
+            let _ = fs_utils::remove_immutable_attribute(&path);
+        }
     }
 
     // Create .lockdir file with a helpful message

@@ -25,6 +25,32 @@ pub fn set_immutable_attribute(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Check if the immutable attribute is set on a path
+pub fn check_immutable_attribute(path: &Path) -> Result<bool> {
+    let abs_path = get_absolute_path(path)?;
+    
+    // Run lsattr to check the attributes on the path
+    let output = Command::new("lsattr")
+        .arg("-d")  // Only list directory, not its contents
+        .arg(abs_path)
+        .output()?;
+    
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!("Failed to check immutable attribute: {error_message}"),
+        ));
+    }
+    
+    // Parse the output to see if the immutable flag is set
+    let output_str = String::from_utf8_lossy(&output.stdout);
+    
+    // The output format is like: "----i---------- /path/to/dir"
+    // We need to check if 'i' appears in the attribute string
+    Ok(output_str.contains("----i") || output_str.contains(" i "))
+}
+
 /// Remove immutable attribute from a path and its contents recursively
 pub fn remove_immutable_attribute(path: &Path) -> Result<()> {
     let abs_path = get_absolute_path(path)?;
