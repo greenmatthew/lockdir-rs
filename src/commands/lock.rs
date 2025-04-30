@@ -24,6 +24,7 @@ pub fn lock_directory(dir_path: Option<&str>, force: bool) -> Result<()> {
     if lock_file_path.exists() {
         if force {
             // If force is true, proceed with force locking silently
+            println!("Directory is already locked, but proceeding with force lock anyway.");
             
             // Try to unlock the directory first without messages
             let _ = fs_utils::remove_immutable_attribute(&path);

@@ -42,6 +42,13 @@ fn main() {
                         .required(false)
                         .index(1),
                 )
+                .arg(
+                    Arg::new("force")
+                        .short('f')
+                        .long("force")
+                        .help("Force unlock even if some files seem to remain locked")
+                        .action(ArgAction::SetTrue),
+                )
         )
         .get_matches();
 
@@ -62,8 +69,9 @@ fn main() {
         }
         Some(("unlock", sub_matches)) => {
             let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
+            let force = sub_matches.get_flag("force");
             
-            if let Err(err) = commands::unlock::unlock_directory(path) {
+            if let Err(err) = commands::unlock::unlock_directory(path, force) {
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }
