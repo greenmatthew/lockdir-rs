@@ -44,7 +44,7 @@ fn main() {
 
     match matches.subcommand() {
         Some(("lock", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
+            let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
             
             if let Err(err) = commands::lock::lock_directory(path) {
                 eprintln!("Error: {err}");
@@ -52,7 +52,7 @@ fn main() {
             }
         }
         Some(("unlock", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
+            let path = sub_matches.get_one::<String>("PATH").map(String::as_str);
             
             if let Err(err) = commands::unlock::unlock_directory(path) {
                 eprintln!("Error: {err}");
