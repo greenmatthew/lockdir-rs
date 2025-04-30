@@ -1,4 +1,4 @@
-use std::fs::{self, remove_file};
+use std::fs::remove_file;
 use std::io::{Error, ErrorKind, Result};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -66,7 +66,7 @@ fn remove_immutable_attribute(path: &Path) -> Result<()> {
         let error_message = String::from_utf8_lossy(&output.stderr);
         return Err(Error::new(
             ErrorKind::Other,
-            format!("Failed to remove immutable attribute: {}", error_message),
+            format!("Failed to remove immutable attribute: {error_message}"),
         ));
     }
     

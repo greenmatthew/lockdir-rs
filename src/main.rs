@@ -47,7 +47,7 @@ fn main() {
             let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
             
             if let Err(err) = commands::lock::lock_directory(path) {
-                eprintln!("Error: {}", err);
+                eprintln!("Error: {err}");
                 std::process::exit(1);
             }
         }
@@ -55,7 +55,7 @@ fn main() {
             let path = sub_matches.get_one::<String>("PATH").map(|s| s.as_str());
             
             if let Err(err) = commands::unlock::unlock_directory(path) {
-                eprintln!("Error: {}", err);
+                eprintln!("Error: {err}");
                 std::process::exit(1);
             }
         }
